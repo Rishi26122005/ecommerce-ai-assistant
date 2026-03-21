@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.db
+instance/
+cache_embeddings.npy
+cache_faiss.index
+amazon.csv
+.venv/
+venv/
+.env
+.vscode/
+.DS_Store
+Thumbs.db
