@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat History – ShopAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body { background: var(--bg); }
+
+    .ch-header {
+      background: rgba(13,15,26,.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .ch-header__logo {
+      font-size: 1.2rem; font-weight: 800; color: var(--text);
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .ch-header__logo span { color: var(--primary); }
+
+    .ch-container {
+      max-width: 900px; margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .ch-title {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .ch-title h1 { font-size: 1.8rem; font-weight: 800; }
+
+    /* Auth gate */
+    .auth-gate {
+      text-align: center; padding: 4rem 1.5rem;
+    }
+    .auth-gate .icon { font-size: 4rem; margin-bottom: 1.5rem; }
+    .auth-gate h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: .75rem; }
+    .auth-gate p  { color: var(--text-muted); margin-bottom: 1.5rem; }
+
+    /* Timeline style */
+    .timeline { position: relative; }
+    .timeline::before {
+      content: '';
+      position: absolute; left: 20px; top: 0; bottom: 0;
+      width: 2px; background: var(--border);
+    }
+
+    .tl-item {
+      position: relative; padding-left: 56px; margin-bottom: 1.5rem;
+    }
+    .tl-dot {
+      position: absolute; left: 11px; top: 18px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border: 3px solid var(--bg);
+      z-index: 1;
+    }
+
+    .tl-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    .tl-card:hover { border-color: rgba(108,99,255,.3); box-shadow: var(--shadow-sm); }
+
+    .tl-card__top {
+      padding: 1rem 1.25rem;
+      display: flex; justify-content: space-between;
+      align-items: flex-start; gap: .75rem;
+      cursor: pointer;
+      border-bottom: 1px solid transparent;
+      transition: var(--transition);
+    }
+    .tl-card__top.open { border-bottom-color: var(--border); }
+
+    .tl-query {
+      font-size: .95rem; font-weight: 600;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .tl-meta { font-size: .75rem; color: var(--text-muted); white-space: nowrap; }
+
+    .tl-body { padding: 1.25rem; display: none; }
+    .tl-body.open { display: block; animation: fadeSlide .25s ease; }
+
+    .tl-ai-label {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--primary-light); margin-bottom: .5rem;
+    }
+    .tl-ai-text {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem; font-size: .86rem;
+      line-height: 1.65; color: var(--text-muted);
+      max-height: 280px; overflow-y: auto;
+      margin-bottom: 1rem;
+    }
+
+    .tl-products {
+      display: flex; gap: .75rem; overflow-x: auto; padding-bottom: .5rem;
+    }
+    .tl-products::-webkit-scrollbar { height: 4px; }
+
+    .tl-prod {
+      flex-shrink: 0; width: 150px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    .tl-prod:hover { border-color: rgba(108,99,255,.3); transform: translateY(-2px); }
+    .tl-prod img {
+      width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+      background: var(--bg-input);
+    }
+    .tl-prod__info { padding: .6rem; }
+    .tl-prod__name {
+      font-size: .73rem; line-height: 1.35; font-weight: 500;
+      display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .tl-prod__price {
+      font-size: .82rem; font-weight: 700;
+      color: var(--primary-light); margin-top: .25rem;
+    }
+    .tl-prod__rating {
+      font-size: .7rem; color: var(--text-muted); margin-top: .15rem;
+    }
+
+    /* Stats banner */
+    .stats-banner {
+      background: linear-gradient(135deg, rgba(108,99,255,.12), rgba(255,101,132,.08));
+      border: 1px solid rgba(108,99,255,.2);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      display: flex; gap: 2rem; flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .stat { text-align: center; flex: 1; min-width: 80px; }
+    .stat .n { font-size: 1.6rem; font-weight: 800; color: var(--primary-light); }
+    .stat .l { font-size: .75rem; color: var(--text-muted); }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex; gap: .75rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+    }
+    .filter-bar input {
+      flex: 1; min-width: 200px;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      padding: .65rem 1rem; font-size: .88rem; outline: none;
+    }
+    .filter-bar input:focus { border-color: var(--primary); }
+
+    @media (max-width: 600px) {
+      .ch-header { padding: .75rem 1rem; }
+      .ch-container { padding: 1.5rem 1rem; }
+      .timeline::before { left: 12px; }
+      .tl-item { padding-left: 40px; }
+      .tl-dot { left: 3px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="ch-header">
+  <div class="ch-header__logo">
+    🛍️ Shop<span>AI</span>
+  </div>
+  <div style="display:flex;gap:.75rem;align-items:center">
+    <a href="/" class="btn btn-outline btn-sm">← Back to App</a>
+    <button class="btn btn-danger btn-sm" id="clearBtn" onclick="clearAll()" style="display:none">
+      🗑 Clear All
+    </button>
+  </div>
+</header>
+
+<!-- Main -->
+<div class="ch-container">
+
+  <!-- Auth Gate -->
+  <div class="auth-gate" id="authGate" style="display:none">
+    <div class="icon">🔐</div>
+    <h2>Login Required</h2>
+    <p>Please login to view your chat history.</p>
+    <a href="/" class="btn btn-primary btn-lg">Go to App →</a>
+  </div>
+
+  <!-- Content (shown when logged in) -->
+  <div id="mainContent" style="display:none">
+    <div class="ch-title">
+      <div>
+        <h1>📋 Chat History</h1>
+        <div class="text-sm text-muted" id="subtitleText">Your AI recommendation conversations</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="loadAll()">🔄 Refresh</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-banner" id="statsBanner">
+      <div class="stat"><div class="n" id="statTotal">–</div><div class="l">Conversations</div></div>
+      <div class="stat"><div class="n" id="statProducts">–</div><div class="l">Products Seen</div></div>
+      <div class="stat"><div class="n" id="statToday">–</div><div class="l">Today</div></div>
+    </div>
+
+    <!-- Search/filter -->
+    <div class="filter-bar">
+      <input type="text" id="searchBar" placeholder="🔍 Search your conversations…" oninput="filterHistory()">
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline" id="timeline">
+      <div class="loading-overlay"><div class="spinner"></div><span>Loading…</span></div>
+    </div>
+
+    <!-- Load more -->
+    <div style="text-align:center;margin-top:2rem" id="loadMoreWrap" style="display:none">
+      <button class="btn btn-outline" id="loadMoreBtn" onclick="loadMore()">Load More</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<script>
+  const API = async (path, opts = {}) => {
+    const r = await fetch(path, {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', ...opts
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error');
+    return d;
+  };
+
+  function toast(msg, type = 'info') {
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+    document.getElementById('toastContainer').appendChild(el);
+    setTimeout(() => { el.style.opacity='0'; el.style.transition='.3s';
+      setTimeout(() => el.remove(), 350); }, 3500);
+  }
+
+  function esc(s) {
+    const d = document.createElement('div'); d.textContent = String(s||''); return d.innerHTML;
+  }
+
+  function mdToHtml(t) {
+    if (!t) return '';
+    return t
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g,'<em>$1</em>')
+      .replace(/^### (.+)$/gm,'<h3 style="color:var(--primary-light);margin:.5rem 0 .25rem">$1</h3>')
+      .replace(/^## (.+)$/gm,'<h2 style="color:var(--primary-light);margin:.6rem 0 .3rem">$1</h2>')
+      .replace(/^# (.+)$/gm,'<h1 style="color:var(--primary-light);margin:.75rem 0 .4rem">$1</h1>')
+      .replace(/^\* (.+)$/gm,'<li>$1</li>')
+      .replace(/^- (.+)$/gm,'<li>$1</li>')
+      .replace(/(<li>[\s\S]*?<\/li>)/g,'<ul style="padding-left:1.2rem;margin:.4rem 0">$1</ul>')
+      .replace(/\n\n/g,'</p><p style="margin:.4rem 0">')
+      .replace(/\n/g,'<br>');
+  }
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleString('en-IN', {
+      weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function renderStars(r) {
+    const v = parseFloat(r) || 0;
+    return '★'.repeat(Math.floor(v)) + (v%1>=.5?'½':'') + '☆'.repeat(5-Math.floor(v)-(v%1>=.5?1:0));
+  }
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let allItems  = [];
+  let filtered  = [];
+  let curPage   = 1;
+  const PER_PAGE = 20;
+
+  // ── Load ───────────────────────────────────────────────────────────────────
+  async function init() {
+    try {
+      const me = await API('/api/auth/me');
+      if (!me.authenticated) {
+        document.getElementById('authGate').style.display = 'block';
+        return;
+      }
+      document.getElementById('mainContent').style.display = 'block';
+      document.getElementById('clearBtn').style.display    = 'inline-flex';
+      await loadAll();
+    } catch (e) {
+      document.getElementById('authGate').style.display = 'block';
+    }
+  }
+
+  async function loadAll() {
+    const tl = document.getElementById('timeline');
+    tl.innerHTML = '<div class="loading-overlay"><div class="spinner"></div><span>Loading…</span></div>';
+    allItems = [];
+    let page = 1;
+    while (true) {
+      const data = await API(`/api/history?page=${page}&per_page=50`);
+      allItems.push(...data.history);
+      if (page >= data.total_pages) break;
+      page++;
+    }
+    updateStats();
+    filtered = [...allItems];
+    renderPage(1);
+  }
+
+  function updateStats() {
+    document.getElementById('statTotal').textContent = allItems.length;
+    const totalProds = allItems.reduce((sum, i) => sum + (i.products?.length || 0), 0);
+    document.getElementById('statProducts').textContent = totalProds;
+    const today = new Date().toDateString();
+    const todayCount = allItems.filter(i => new Date(i.timestamp).toDateString() === today).length;
+    document.getElementById('statToday').textContent = todayCount;
+    document.getElementById('subtitleText').textContent =
+      `${allItems.length} conversations · ${totalProds} products discovered`;
+  }
+
+  function filterHistory() {
+    const q = document.getElementById('searchBar').value.toLowerCase();
+    filtered = q
+      ? allItems.filter(i => i.query.toLowerCase().includes(q) || i.ai_response.toLowerCase().includes(q))
+      : [...allItems];
+    renderPage(1);
+  }
+
+  function renderPage(page) {
+    curPage = page;
+    const tl = document.getElementById('timeline');
+
+    if (!filtered.length) {
+      tl.innerHTML = `<div class="empty-state">
+        <div class="icon">💬</div><h3>No conversations found</h3>
+        <p>Start chatting with the AI recommender.</p>
+        <a href="/" class="btn btn-primary mt-2">Open App →</a>
+      </div>`;
+      document.getElementById('loadMoreWrap').style.display = 'none';
+      return;
+    }
+
+    const start = (page - 1) * PER_PAGE;
+    const slice = filtered.slice(0, start + PER_PAGE);
+
+    tl.innerHTML = slice.map((item, idx) => `
+      <div class="tl-item" id="tl-${item.id}">
+        <div class="tl-dot"></div>
+        <div class="tl-card">
+          <div class="tl-card__top" id="top-${item.id}" onclick="toggle(${item.id})">
+            <div>
+              <div class="tl-query">
+                <span style="color:var(--primary-light)">💬</span>
+                ${esc(item.query)}
+              </div>
+              <div style="display:flex;gap:.5rem;align-items:center;margin-top:.4rem;flex-wrap:wrap">
+                <span class="badge badge-primary">${item.products?.length || 0} products</span>
+                <span class="tl-meta">🕒 ${formatDate(item.timestamp)}</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:.5rem;align-items:center;flex-shrink:0">
+              <span style="color:var(--text-muted);font-size:.8rem">▼</span>
+              <button class="btn btn-danger btn-sm" style="padding:.3rem .6rem"
+                onclick="event.stopPropagation(); deleteItem(${item.id})">🗑</button>
+            </div>
+          </div>
+          <div class="tl-body" id="body-${item.id}">
+            <div class="tl-ai-label">🤖 AI Response</div>
+            <div class="tl-ai-text ai-text">${mdToHtml(item.ai_response)}</div>
+            ${item.products?.length ? `
+              <div class="tl-ai-label">🛒 Retrieved Products (${item.products.length})</div>
+              <div class="tl-products">
+                ${item.products.map(p => `
+                  <div class="tl-prod">
+                    <img src="${p.img_link||''}" alt="${esc(p.product_name)}" onerror="this.style.display='none'" loading="lazy">
+                    <div class="tl-prod__info">
+                      <div class="tl-prod__name">${esc(p.product_name)}</div>
+                      <div class="tl-prod__rating">${renderStars(p.rating)} ${p.rating||''}</div>
+                      <div class="tl-prod__price">₹${Number(p.discounted_price||0).toLocaleString()}</div>
+                      <a href="${p.product_link}" target="_blank" rel="noopener"
+                        class="btn btn-primary btn-sm w-full mt-1" style="font-size:.7rem">Buy Now</a>
+                    </div>
+                  </div>`).join('')}
+              </div>` : '<div class="text-sm text-muted">No products retrieved.</div>'}
+          </div>
+        </div>
+      </div>`).join('');
+
+    const hasMore = filtered.length > start + PER_PAGE;
+    const wrap = document.getElementById('loadMoreWrap');
+    wrap.style.display = hasMore ? 'block' : 'none';
+  }
+
+  function toggle(id) {
+    const body = document.getElementById(`body-${id}`);
+    const top  = document.getElementById(`top-${id}`);
+    body.classList.toggle('open');
+    top.classList.toggle('open');
+  }
+
+  function loadMore() {
+    renderPage(curPage + 1);
+  }
+
+  async function deleteItem(id) {
+    if (!confirm('Delete this conversation?')) return;
+    try {
+      await API(`/api/history/${id}`, { method: 'DELETE' });
+      allItems  = allItems.filter(i => i.id !== id);
+      filtered  = filtered.filter(i => i.id !== id);
+      updateStats();
+      renderPage(1);
+      toast('Deleted.', 'success');
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  }
+
+  async function clearAll() {
+    if (!confirm('Clear ALL history? This cannot be undone.')) return;
+    try {
+      await API('/api/history/clear', { method: 'DELETE' });
+      allItems = []; filtered = [];
+      updateStats();
+      renderPage(1);
+      toast('History cleared.', 'success');
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  }
+
+  // Boot
+  init();
+</script>
+</body>
+</html>
