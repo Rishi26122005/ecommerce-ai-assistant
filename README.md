@@ -164,80 +164,6 @@ ecommerce-ai-assistant/
         └── main.js         ← SPA router, streaming, products, auth
 ```
 
-> ⚠️ `amazon.csv`, `cache_embeddings.npy`, `cache_faiss.index` are **not included** in the repo (too large). See setup instructions below.
-
----
-
-## ⚙️ Installation
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/YourUsername/ecommerce-ai-assistant.git
-cd ecommerce-ai-assistant
-```
-
-### 2. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Add your dataset
-Place your `amazon.csv` file in the project root.
-
-Expected columns:
-```
-product_id, product_name, category, discounted_price, actual_price,
-discount_percentage, rating, rating_count, about_product,
-img_link, product_link
-```
-
-### 4. Set your Gemini API key
-Open `app.py` and replace the API key:
-```python
-GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"
-```
-
-Or set as environment variable:
-```bash
-export GEMINI_API_KEY="AIzaSy..."
-```
-
-Get your free API key at: [aistudio.google.com](https://aistudio.google.com)
-
-### 5. Run the app
-```bash
-python app.py
-```
-
-Open **http://localhost:5000** in your browser.
-
-### ⏱️ Startup Time
-
-| Run | Time | What happens |
-|-----|------|-------------|
-| **First run** | ~5–10 min | Generates & caches embeddings to disk |
-| **Second run+** | ~15 sec | Loads from `cache_embeddings.npy` + `cache_faiss.index` |
-
----
-
-## 🌐 API Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|:----:|-------------|
-| `POST` | `/api/auth/register` | ❌ | Create account |
-| `POST` | `/api/auth/login` | ❌ | Login |
-| `POST` | `/api/auth/logout` | ❌ | Logout |
-| `GET` | `/api/auth/me` | ❌ | Check session |
-| `GET` | `/api/products` | ❌ | Browse with filters & pagination |
-| `GET` | `/api/products/search?q=` | ❌ | Hybrid BM25+FAISS search |
-| `POST` | `/api/recommend` | ✅ | AI recommendation (full response) |
-| `POST` | `/api/recommend/stream` | ✅ | AI recommendation (SSE streaming) |
-| `GET` | `/api/history` | ✅ | Get paginated chat history |
-| `DELETE` | `/api/history/<id>` | ✅ | Delete one conversation |
-| `DELETE` | `/api/history/clear` | ✅ | Clear all history |
-
----
-
 ## 🗃️ Database Schema
 
 ### `users` table
@@ -283,25 +209,6 @@ User Query
 ```python
 final_score = 0.6 × faiss_similarity + 0.4 × bm25_normalized
 ```
-
----
-
-## 📸 Screenshots
-
-| Page | Description |
-|------|-------------|
-| 🏠 **Home** | Animated hero with stats, feature cards |
-| 📦 **Products** | Grid with sidebar filters, product modals |
-| 🤖 **AI Recommend** | Live streaming chat with product cards |
-| 📋 **History** | Collapsible conversation timeline |
-| 🔐 **Login/Register** | Clean auth forms with animations |
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** — feel free to use, modify and distribute.
-
 ---
 
 ## 👨‍💻 Author
