@@ -36,11 +36,9 @@
 - [Tech Stack](#-tech-stack)
 - [Features](#-features)
 - [Project Structure](#-project-structure)
-- [Installation](#-installation)
-- [API Endpoints](#-api-endpoints)
 - [Database Schema](#-database-schema)
 - [How It Works](#-how-it-works)
-- [Screenshots](#-screenshots)
+
 
 ---
 
